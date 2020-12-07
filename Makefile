@@ -11,18 +11,23 @@
 
 SUFFIXES = .o .f90
 
+MPICC       = mpicc
 MPIF90       = mpif90
-FCFLAGS      = -O2
-PNETCDF_DIR  = $(HOME)/PnetCDF/1.10.0
+FCFLAGS      = -O0 -ggdb
+CFLAGS		= -O0 -ggdb
+PNETCDF_DIR  = $(HOME)/.local/pnetcdf/master
+HDF5_DIR  = $(HOME)/.local/hdf5/1.12.0
 
+COMPILE_C  = $(MPICC) $(CFLAGS) $(INC) -c
 COMPILE_F90  = $(MPIF90) $(FCFLAGS) $(INC) -c
 LINK         = $(MPIF90) $(FCFLAGS)
-INC          = -I$(PNETCDF_DIR)/include
-LIBS         = -L$(PNETCDF_DIR)/lib -lpnetcdf
+INC          = -I$(PNETCDF_DIR)/include -I$(HDF5_DIR)/include
+LIBS         = -L$(PNETCDF_DIR)/lib -lpnetcdf -L$(HDF5_DIR)/lib -lhdf5
 
-SRCS = io_info.f90 header.f90 mpiio_m.f90 make_set.f90 pnetcdf_m.f90 bt.f90
+SRCS = io_info.f90 header.f90 mpiio_m.f90 make_set.f90 pnetcdf_m.f90 hdf5_m.f90 bt.f90
+CSRCS = hdf5_m_imp.c 
 
-OBJS = $(SRCS:.f90=.o)
+OBJS = $(SRCS:.f90=.o) $(CSRCS:.c=.o)
 
 TARGET = btio
 
@@ -30,6 +35,9 @@ all: $(TARGET)
 
 %.o:%.f90
 	$(COMPILE_F90) $<
+
+%.o:%.c
+	$(COMPILE_C) $<
 
 $(TARGET): $(OBJS)
 	$(LINK) $(OBJS) -o $(TARGET) $(LIBS)
@@ -39,6 +47,7 @@ header.o:         header.f90
 mpiio_m.o:        mpiio_m.f90 header.o
 make_set.o:       make_set.f90 header.o
 pnetcdf_m.o:      pnetcdf_m.f90 header.o
+hdf5_m.o:      	  hdf5_m.f90 header.o
 bt.o:             bt.f90 header.o mpiio_m.o pnetcdf_m.f90
 
 PACKAGE_NAME = btio-pnetcdf-1.1.1

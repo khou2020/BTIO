@@ -9,6 +9,7 @@
       use header
       use mpiio_m
       use pnetcdf_m
+      use hdf5_m
       implicit none
 
       character io_mode
@@ -76,6 +77,8 @@
 
       if (niter .EQ. -1) goto 999
 
+      dir_path_len=LEN_TRIM(dir_path)
+      
       call allocate_variables
 
       call make_set
@@ -89,8 +92,10 @@
 
       if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
          err = mpiio_setup(io_mode)
-      else
+      else if (io_method .LT. 4) then ! 2: pnc blocking, 3: pnc onon-blocking
          err = pnetcdf_setup(io_mode, io_method)
+      else
+         err = hdf5_setup(io_mode, io_method)
       endif
       if (err .EQ. 0) goto 999
 
@@ -98,23 +103,29 @@
          if (io_mode .EQ. 'w') then
             if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
                call mpiio_write(io_method)
-            else
+            else if (io_method .LT. 4) then
                call pnetcdf_write
+            else 
+                call hdf5_write
             endif
          else
             if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
                call mpiio_read(io_method)
-            else
-               call pnetcdf_read
+            else if (io_method .LT. 4) then
+                call pnetcdf_read
+            else 
+               call hdf5_read
             endif
          endif
       end do
 
-      if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
-         call mpiio_cleanup
-      else
-         call pnetcdf_cleanup
-      endif
+        if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
+            call mpiio_cleanup
+        else if (io_method .LT. 4) then
+            call pnetcdf_cleanup
+        else 
+            call hdf5_cleanup
+        endif
 
       call deallocate_variables
 
@@ -128,7 +139,7 @@
           t_create = tmax
           call MPI_Reduce(t_post_w, tmax, 1, MPI_DOUBLE_PRECISION, &
                           MPI_MAX, root, MPI_COMM_WORLD, err)
-          t_post_w = tmax
+          ! t_post_w = tmax
           call MPI_Reduce(t_wait_w, tmax, 1, MPI_DOUBLE_PRECISION, &
                           MPI_MAX, root, MPI_COMM_WORLD, err)
           t_wait_w = tmax
@@ -147,7 +158,9 @@
       if ( rank .eq. root ) then
          striping_factor = 0
          striping_unit   = 0
-         call get_file_striping(info_used, striping_factor, striping_unit)
+         if ( info_used .ne. MPI_INFO_NULL ) then
+            call get_file_striping(info_used, striping_factor, striping_unit)
+         end if
          ! call print_io_hints(info_used)
 
          n3 = grid_points(1)*grid_points(2)*grid_points(3)

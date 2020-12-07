@@ -15,8 +15,8 @@
       integer(KIND=MPI_OFFSET_KIND) put_size, get_size
       integer, allocatable :: buftypes(:), reqs(:), sts(:)
       logical doNonBlockingIO
-      double precision t_create, t_post_w, t_wait_w
-      double precision t_open,   t_post_r, t_wait_r
+!      double precision t_create, t_post_w, t_wait_w
+!      double precision t_open,   t_post_r, t_wait_r
 
       private :: check
 
