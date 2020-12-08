@@ -32,6 +32,18 @@
 		printf ("}\n");                                   \
 	}
 
+#define CHECK_MPIERR                                                             \
+	{                                                                            \
+		if (ret != MPI_SUCCESS) {                                             \
+			int el = 256;                                                        \
+			char errstr[256];                                                    \
+			MPI_Error_string (ret, errstr, &el);                              \
+			printf ("Error at line %d in %s: %s\n", __LINE__, __FILE__, errstr); \
+			err = -1;                                                            \
+			goto err_out;                                                        \
+		}                                                                        \
+	}
+
 #define FIVE_DBL_SIZE 5
 
 hid_t fid	 = -1;
@@ -65,8 +77,9 @@ int hdf5_setup (char *io_mode, int *io_method) {
 	hid_t faplid = -1;
 	hid_t dsid	 = -1;
 	hid_t dcplid;
-	double t;
+	MPI_File fh;
 	char path[1024];
+	double t;
 
 	// printf ("hdf5_setup\n");
 	// print_params (io_mode, io_method);
@@ -109,15 +122,25 @@ int hdf5_setup (char *io_mode, int *io_method) {
 		H5Pset_chunk (dcplid, 5, griddim);
 		did = H5Dcreate2 (fid, "var", H5T_IEEE_F64BE, dsid, H5P_DEFAULT, dcplid, H5P_DEFAULT);
 		CHECK_ID (did)
-	}
+	} else {
+		fid = H5Fopen (path, H5F_ACC_RDONLY, faplid);
+		CHECK_ID (fid);
 
-	H5Pclose (faplid);
-	faplid	  = H5Fget_access_plist (fid);
-	info_used = MPI_INFO_NULL;
-	H5Pget_fapl_mpio (faplid, NULL, &info_used);
+		griddim[0]	= 0;
+		gridmdim[0] = H5S_UNLIMITED;
+		griddim[1] = gridmdim[1] = grid_points[2];
+		griddim[2] = gridmdim[2] = grid_points[1];
+		griddim[3] = gridmdim[3] = grid_points[0];
+		griddim[4] = gridmdim[4] = FIVE_DBL_SIZE;
+		msid					 = H5Screate_simple (1, &cellsize, &cellsize);
+
+		did = H5Dopen2 (fid, "var", H5P_DEFAULT);
+		CHECK_ID (did)
+	}
 
 	dxplid = H5Pcreate (H5P_DATASET_XFER);
 	CHECK_ID (dxplid)
+	H5Pset_dxpl_mpio (dxplid, H5FD_MPIO_COLLECTIVE);
 
 	t = MPI_Wtime () - t;
 	if (*io_mode == 'w') {
@@ -126,10 +149,21 @@ int hdf5_setup (char *io_mode, int *io_method) {
 		t_open = t;
 	}
 
+	if (*io_mode == 'w') {
+		ret = MPI_File_open (MPI_COMM_WORLD, path, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+	} else {
+		ret = MPI_File_open (MPI_COMM_WORLD, path, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+	}
+	CHECK_MPIERR
+	ret = MPI_File_get_info (fh, &info_used);
+	CHECK_MPIERR
+	MPI_File_close(&fh);
+
 err_out:;
 
 	if (faplid >= 0) { H5Pclose (faplid); }
 	if (dcplid >= 0) { H5Pclose (dcplid); }
+	if (dsid >= 0) { H5Sclose (dsid); }
 	if (err) ret = 0;
 	return ret;
 }
@@ -168,7 +202,7 @@ void hdf5_write () {
 		err = H5Sselect_hyperslab (dsid, H5S_SELECT_SET, start, NULL, one, count);
 		CHECK_ERR
 
-		err = H5Dwrite (did, H5T_NATIVE_DOUBLE, msid, dsid, H5P_DEFAULT, u_p + i * cellsize);
+		err = H5Dwrite (did, H5T_NATIVE_DOUBLE, msid, dsid, dxplid, u_p + i * cellsize);
 		CHECK_ERR
 	}
 
@@ -189,11 +223,58 @@ err_out:;
 }
 
 void hdf5_read () {
+	herr_t err = 0;
+	int i;
+	hid_t dsid = -1;
+	double t_start, t_end;
+	hsize_t start[5], count[5], one[5] = {1, 1, 1, 1, 1};
+
 	// printf ("hdf5_read\n");
+
+	t_start = MPI_Wtime ();
+
+	dsid = H5Dget_space (did);
+	CHECK_ID (dsid)
+
+	for (i = 0; i < ncells; i++) {
+		start[0] = num_io;
+		start[1] = cell_low_p[2 + i * 3];
+		start[2] = cell_low_p[1 + i * 3];
+		start[3] = cell_low_p[0 + i * 3];
+		start[4] = 0;
+
+		count[0] = 1;
+		count[1] = cell_size_p[2 + i * 3];
+		count[2] = cell_size_p[1 + i * 3];
+		count[3] = cell_size_p[0 + i * 3];
+		count[4] = FIVE_DBL_SIZE;
+
+		err = H5Sselect_hyperslab (dsid, H5S_SELECT_SET, start, NULL, one, count);
+		CHECK_ERR
+
+		err = H5Dread (did, H5T_NATIVE_DOUBLE, msid, dsid, dxplid, u_p + i * cellsize);
+		CHECK_ERR
+	}
+
+	num_io = num_io + 1;
+
+	t_end	 = MPI_Wtime ();
+	t_post_r = t_post_r + t_end - t_start;
+	t_start	 = t_end;
+
+	err = H5Fflush (fid, H5F_SCOPE_LOCAL);
+	CHECK_ERR
+
+	t_end	 = MPI_Wtime ();
+	t_wait_r = t_wait_r + t_end - t_start;
+
+err_out:;
+	if (dsid >= 0) { H5Sclose (dsid); }
 }
 
 void hdf5_cleanup () {
 	// printf ("hdf5_cleanup\n");
+
 	if (msid >= 0) { H5Sclose (msid); }
 	if (dxplid >= 0) { H5Pclose (dxplid); }
 	if (did >= 0) { H5Dclose (did); }
