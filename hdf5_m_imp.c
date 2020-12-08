@@ -34,10 +34,10 @@
 
 #define CHECK_MPIERR                                                             \
 	{                                                                            \
-		if (ret != MPI_SUCCESS) {                                             \
+		if (mpierr != MPI_SUCCESS) {                                             \
 			int el = 256;                                                        \
 			char errstr[256];                                                    \
-			MPI_Error_string (ret, errstr, &el);                              \
+			MPI_Error_string (ret, errstr, &el);                                 \
 			printf ("Error at line %d in %s: %s\n", __LINE__, __FILE__, errstr); \
 			err = -1;                                                            \
 			goto err_out;                                                        \
@@ -73,6 +73,7 @@ void print_params (char *io_mode, int *io_method) {
 
 int hdf5_setup (char *io_mode, int *io_method) {
 	int ret		 = 1;
+	int mpierr	 = 0;
 	herr_t err	 = 0;
 	hid_t faplid = -1;
 	hid_t dsid	 = -1;
@@ -115,11 +116,14 @@ int hdf5_setup (char *io_mode, int *io_method) {
 		griddim[3] = gridmdim[3] = grid_points[0];
 		griddim[4] = gridmdim[4] = FIVE_DBL_SIZE;
 		dsid					 = H5Screate_simple (5, griddim, gridmdim);
-		msid					 = H5Screate_simple (1, &cellsize, &cellsize);
+		CHECK_ID (dsid)
+		msid = H5Screate_simple (1, &cellsize, &cellsize);
+		CHECK_ID (msid)
 
 		dcplid	   = H5Pcreate (H5P_DATASET_CREATE);
 		griddim[0] = 1;
-		H5Pset_chunk (dcplid, 5, griddim);
+		err		   = H5Pset_chunk (dcplid, 5, griddim);
+		CHECK_ERR
 		did = H5Dcreate2 (fid, "var", H5T_IEEE_F64BE, dsid, H5P_DEFAULT, dcplid, H5P_DEFAULT);
 		CHECK_ID (did)
 	} else {
@@ -133,7 +137,7 @@ int hdf5_setup (char *io_mode, int *io_method) {
 		griddim[3] = gridmdim[3] = grid_points[0];
 		griddim[4] = gridmdim[4] = FIVE_DBL_SIZE;
 		msid					 = H5Screate_simple (1, &cellsize, &cellsize);
-
+		CHECK_ID (msid)
 		did = H5Dopen2 (fid, "var", H5P_DEFAULT);
 		CHECK_ID (did)
 	}
@@ -150,14 +154,14 @@ int hdf5_setup (char *io_mode, int *io_method) {
 	}
 
 	if (*io_mode == 'w') {
-		ret = MPI_File_open (MPI_COMM_WORLD, path, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+		mpierr = MPI_File_open (MPI_COMM_WORLD, path, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	} else {
-		ret = MPI_File_open (MPI_COMM_WORLD, path, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+		mpierr = MPI_File_open (MPI_COMM_WORLD, path, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
 	}
 	CHECK_MPIERR
-	ret = MPI_File_get_info (fh, &info_used);
+	mpierr = MPI_File_get_info (fh, &info_used);
 	CHECK_MPIERR
-	MPI_File_close(&fh);
+	MPI_File_close (&fh);
 
 err_out:;
 

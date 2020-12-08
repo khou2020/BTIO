@@ -169,6 +169,32 @@
          navg = navg * num_io    ! I/O amount for all write/read
          navg = navg / 1048576.0 ! I/O amount in MB
 
+ 3000    format('#%$: ', A, ': ', A)
+ 3001    format('#%$: ', A, ': ', F16.2)
+ 3002    format('#%$: ', A, ': ', I13)
+
+         print 3002,' number_of_cells', ncells
+         print 3002,' number_of_iterations', niter
+
+         if (io_mode .EQ. 'w') then
+            print 3000,'io_operation', 'write'
+         else
+            print 3000,'io_operation', 'read'
+         endif
+         print 3002,'n_proc', nprocs
+         print 3002,'size_x', grid_points(1)
+         print 3002,'size_y', grid_points(2)
+         print 3002,'size_z', grid_points(3)
+         print 3002,'n_itr', niter
+         
+         print 3001,'io_size', navg
+
+         print 3002,'io_method', io_method
+
+         print 3000,'file_name',trim(dir_path)
+         print 3002,'stripe_count',striping_factor
+         print 3002,'stripe_size',striping_unit
+
  2000    FORMAT(A)
  2001    FORMAT(A, A)
  2002    FORMAT(A, I9)
@@ -188,17 +214,25 @@
          print 2002,'Number of I/O iterations    : ',niter
          print 2005,'Total I/O amount            : ',navg, ' MiB'
          print 2004,'Total I/O time in sec       : ',t_total
+         print 3001,'t_total', t_total
          if (io_mode .EQ. 'w') then
          print 2004,'Max file create time in sec : ',t_create
          print 2004,'Max write post  time in sec : ',t_post_w
          print 2004,'Max write wait  time in sec : ',t_wait_w
+         print 3001,'t_create', t_create
+         print 3001,'t_post_w', t_post_w
+         print 3001,'t_wait_w', t_wait_w
          else
          print 2004,'Max file open   time in sec : ',t_open
          print 2004,'Max read post   time in sec : ',t_post_r
          print 2004,'Max read wait   time in sec : ',t_wait_r
+         print 3001,'t_open', t_open
+         print 3001,'t_post_r', t_post_r
+         print 3001,'t_wait_r', t_wait_r
          endif
          navg = navg / t_total      ! I/O Bandwidth in MB/s
          print 2005,'I/O bandwidth            : ',navg, ' MiB/s'
+         print 3001,'io_bw', navg
 
          print 2000, '------------------------------------------'
          if (io_method .EQ. 0) then ! 0: collective I/O, 1: independent I/O

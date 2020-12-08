@@ -28,24 +28,24 @@ HDF5_LOG=5
 APP_NAMES=(mpi_coll mpi_indep pnc_b pnc_nb hdf5 hdf5_log)
 
 APP=btio
-APIS=(${PNC_NB} ${HDF5} ${HDF5_LOG})
-APIS=(${HDF5_LOG})
+#APIS=(${PNC_NB} ${HDF5} ${HDF5_LOG})
+APIS=(${HDF5})
 OPS=(w)
 TL=5
 
 #EDGEL=sqrt(NP)*32
-EDGEL=1024
+EDGEL=128
 DIMX=${EDGEL}
 DIMY=${EDGEL}
 DIMZ=${EDGEL}
 NITR=1 # 5 * 8 MiB /process
 
 echo "mkdir -p ${OUTDIR_ROOT}"
-#mkdir -p ${OUTDIR_ROOT}
+mkdir -p ${OUTDIR_ROOT}
 for API in ${APIS[@]}
 do
     echo "mkdir -p ${OUTDIR_ROOT}/${APP_NAMES[${API}]}"
-    #mkdir -p ${OUTDIR_ROOT}/${API}
+    mkdir -p ${OUTDIR_ROOT}/${APP_NAMES[${API}]}
 done
 
 ulimit -c unlimited
@@ -58,7 +58,7 @@ do
     do
         OUTDIR=${OUTDIR_ROOT}/${APP_NAMES[${API}]}/
         echo "rm -f ${OUTDIR}/*"
-        #rm -f ${OUTDIR}/*
+        rm -f ${OUTDIR}/*
 
         for OP in ${OPS[@]}
         do
@@ -90,7 +90,7 @@ do
             fi
             
             echo "srun -n ${NP} -t ${TL} ./${APP}"
-            #srun -n ${NP} -t ${TL} ./${APP}
+            srun -n ${NP} -t ${TL} ./${APP}
 
             ENDTIME=`date +%s.%N`
             TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
