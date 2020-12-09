@@ -72,13 +72,16 @@ void print_params (char *io_mode, int *io_method) {
 }
 
 int hdf5_setup (char *io_mode, int *io_method) {
-	int ret		 = 1;
-	int mpierr	 = 0;
+	int ret	   = 1;
+	int mpierr = 0;
+	int i;
 	herr_t err	 = 0;
 	hid_t faplid = -1;
 	hid_t dsid	 = -1;
 	hid_t dcplid;
+	hsize_t csize;
 	MPI_File fh;
+	hsize_t cdim[5];
 	char path[1024];
 	double t;
 
@@ -120,9 +123,25 @@ int hdf5_setup (char *io_mode, int *io_method) {
 		msid = H5Screate_simple (1, &cellsize, &cellsize);
 		CHECK_ID (msid)
 
-		dcplid	   = H5Pcreate (H5P_DATASET_CREATE);
-		griddim[0] = 1;
-		err		   = H5Pset_chunk (dcplid, 5, griddim);
+		dcplid = H5Pcreate (H5P_DATASET_CREATE);
+
+		// Chunk size must not exceed 4 GiB
+		csize = sizeof (double);
+		for (i = 4; i > 0; i--) {
+			if (csize * griddim[i] <= 4294967296) {
+				cdim[i] = griddim[i];
+				csize *= cdim[i];
+			} else {
+				cdim[i] = 1;
+				while (csize <= 2147483648) {
+					csize <<= 1;
+					cdim[i] <<= 1;
+				}
+			}
+		}
+		cdim[0] = 1;  // Set record dim to 1
+
+		err = H5Pset_chunk (dcplid, 5, cdim);
 		CHECK_ERR
 		did = H5Dcreate2 (fid, "var", H5T_IEEE_F64BE, dsid, H5P_DEFAULT, dcplid, H5P_DEFAULT);
 		CHECK_ID (did)
