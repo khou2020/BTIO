@@ -1,20 +1,20 @@
 #!/bin/bash
-#SBATCH -p debug
-#SBATCH -N 1 
+#SBATCH -p regular
+#SBATCH -N 32 
 #SBATCH -C haswell
-#SBATCH -t 00:20:00
-#SBATCH -o btio_1_%j.txt
-#SBATCH -e btio_1_%j.err
+#SBATCH -t 00:08:00
+#SBATCH -o btio_hdf5_32_%j.txt
+#SBATCH -e btio_hdf5_32_%j.err
 #SBATCH -L SCRATCH
 #SBATCH -A m844
 
 NN=${SLURM_NNODES}
-let NP=NN*16
-#let NP=NN*32 
+#let NP=NN*16
+let NP=NN*32 
 
-export LD_LIBRARY_PATH=/global/homes/k/khl7265/.local/hdf5/1.12.0/lib:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=/global/homes/k/khl7265/.local/hdf5/1.12.0/lib:${HOME}/.local/log_io_vol/profiling/lib:${LD_LIBRARY_PATH}
 
-RUNS=(1) # Number of runs
+RUNS=(1 2) # Number of runs
 
 OUTDIR_ROOT=/global/cscratch1/sd/khl7265/FS_64_8M/btio
 
@@ -29,12 +29,12 @@ APP_NAMES=(mpi_coll mpi_indep pnc_b pnc_nb hdf5 hdf5_log)
 
 APP=btio
 #APIS=(${PNC_NB} ${HDF5} ${HDF5_LOG})
-APIS=(${HDF5})
+APIS=(${PNC_NB} ${HDF5_LOG})
 OPS=(w)
-TL=5
+TL=8
 
 #EDGEL=sqrt(NP)*32
-EDGEL=128
+EDGEL=1024
 DIMX=${EDGEL}
 DIMY=${EDGEL}
 DIMZ=${EDGEL}

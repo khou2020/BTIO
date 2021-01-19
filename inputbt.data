@@ -1,5 +1,5 @@
-w                  # IO mode:    w for write, r for read
-4                  # IO method:  0 for MPI collective I/O, 1 for MPI_independent I/O, 2 for PnetCDF blocking I/O, 3 for PnetCDF nonblocking I/O
-5                  # number of time steps
-16 16 16           # grid_points(1), grid_points(2), grid_points(3)
-./output
+w                  # IO mode: w for write, r for read
+5                  # IO method: 0 for MPI collective IO, 1 for MPI independent IO, 2 for PnetCDF blocking I/O, 3 for PnetCDF nonblocking I/O
+1                 # number of time steps
+2048 2048 1024        # grid_points(1), grid_points(2), grid_points(3)
+/global/cscratch1/sd/khl7265/FS_64_8M/btio/hdf5_log/

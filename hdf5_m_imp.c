@@ -129,12 +129,12 @@ int hdf5_setup (char *io_mode, int *io_method) {
 		// Chunk size must not exceed 4 GiB
 		csize = sizeof (double);
 		for (i = 4; i > 0; i--) {
-			if (csize * griddim[i] <= 4294967296) {
+			if (csize * griddim[i] <= 1073741824) {
 				cdim[i] = griddim[i];
 				csize *= cdim[i];
 			} else {
 				cdim[i] = 1;
-				while (csize <= 2147483648) {
+				while (csize <= 536870912) {
 					csize <<= 1;
 					cdim[i] <<= 1;
 				}
