@@ -92,6 +92,7 @@ int hdf5_setup (char *io_mode, int *io_method) {
 	t_wait_w = 0.0;
 	t_post_r = 0.0;
 	t_wait_r = 0.0;
+	t_close = 0.0;
 
 	t = MPI_Wtime ();
 
@@ -296,10 +297,17 @@ err_out:;
 }
 
 void hdf5_cleanup () {
+	double t_start, t_end;
+
+	t_start = MPI_Wtime ();
+
 	// printf ("hdf5_cleanup\n");
 
 	if (msid >= 0) { H5Sclose (msid); }
 	if (dxplid >= 0) { H5Pclose (dxplid); }
 	if (did >= 0) { H5Dclose (did); }
 	if (fid >= 0) { H5Fclose (fid); }
+
+	t_end	 = MPI_Wtime ();
+	t_close += t_end - t_start;
 }

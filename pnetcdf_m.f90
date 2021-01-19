@@ -344,6 +344,9 @@
       implicit none
 
       integer c, err
+      double precision t
+
+      t = MPI_Wtime()
 
       err = nfmpi_inq_put_size(ncid, put_size)
       err = nfmpi_inq_get_size(ncid, get_size)
@@ -359,6 +362,8 @@
       deallocate(reqs)
       deallocate(sts)
 
+      t_close = MPI_Wtime() - t
+    
       end subroutine pnetcdf_cleanup
 
       end module pnetcdf_m

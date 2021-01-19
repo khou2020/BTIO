@@ -47,6 +47,7 @@
       double precision, bind(C, name="t_post_w") :: t_post_w
       double precision, bind(C, name="t_wait_w") :: t_wait_w
       double precision, bind(C, name="t_open") :: t_open
+      double precision, bind(C, name="t_close") :: t_close
       double precision, bind(C, name="t_post_r") :: t_post_r
       double precision, bind(C, name="t_wait_r") :: t_wait_r
       

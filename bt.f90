@@ -154,6 +154,9 @@
                           MPI_MAX, root, MPI_COMM_WORLD, err)
           t_wait_r = tmax
       endif
+      call MPI_Reduce(t_close, tmax, 1, MPI_DOUBLE_PRECISION, &
+      MPI_MAX, root, MPI_COMM_WORLD, err)
+      t_close = tmax
 
       if ( rank .eq. root ) then
          striping_factor = 0
@@ -230,6 +233,7 @@
          print 3001,'t_post_r', t_post_r
          print 3001,'t_wait_r', t_wait_r
          endif
+         print 3001,'t_close', t_close
          navg = navg / t_total      ! I/O Bandwidth in MB/s
          print 2005,'I/O bandwidth            : ',navg, ' MiB/s'
          print 3001,'io_bw', navg

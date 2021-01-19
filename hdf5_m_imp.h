@@ -23,9 +23,9 @@ extern char *dir_path_p;
 extern int dir_path_len;
 
 extern double t_create, t_post_w, t_wait_w;
-extern double t_open, t_post_r, t_wait_r;
+extern double t_open, t_close, t_post_r, t_wait_r;
 
-int hdf5_setup(char *io_mode, int *io_method);
-void hdf5_write();
-void hdf5_read();
-void hdf5_cleanup();
+int hdf5_setup (char *io_mode, int *io_method);
+void hdf5_write ();
+void hdf5_read ();
+void hdf5_cleanup ();
