@@ -3,7 +3,6 @@ changecom([[[###]]], [[[$$$]]])dnl
 #!/bin/bash
 #COBALT -q EXP_QUEUE
 #COBALT -n EXP_NN
-#COBALT -C EXP_NODE_TYPE
 #COBALT -t EXP_TL
 #COBALT -o EXP_NAME.txt
 #COBALT -e EXP_NAME.err
