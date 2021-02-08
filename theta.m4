@@ -3,7 +3,6 @@ changecom([[[###]]], [[[$$$]]])dnl
 #!/bin/bash
 #COBALT -q EXP_QUEUE
 #COBALT -n EXP_NN
-#COBALT -C EXP_NODE_TYPE
 #COBALT -t EXP_TL
 #COBALT -o EXP_NAME.txt
 #COBALT -e EXP_NAME.err
@@ -36,7 +35,7 @@ APP_NAMES=(mpi_coll mpi_indep pnc_b pnc_nb hdf5 hdf5_log)
 APP=btio
 APIS=(${PNC_NB} ${HDF5_LOG})
 
-NN=${SLURM_NNODES}
+NN=EXP_NN
 let NP=NN*PPN
 
 # Print exp setting
@@ -69,7 +68,7 @@ export n_mpi_ranks_per_node=${PPN}
 export n_mpi_ranks=$(($n_nodes * $n_mpi_ranks_per_node))
 export n_openmp_threads_per_rank=1
 export n_hyperthreads_per_core=1
-export LD_LIBRARY_PATH=${HDF5_LIB_PATH}/lib:${PNC_LIB_PATH}/lib:${LOGVOL_LIB_PATH}/lib:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=${HDF5_LIB_PATH}/lib:${PNC_LIB_PATH}/lib:${LOGVOL_LIB_PATH}/lib:/opt/intel/compilers_and_libraries_2020.0.166/linux/compiler/lib/intel64:${LD_LIBRARY_PATH}
 export H5VL_LOG_METADATA_MERGE=1
 export H5VL_LOG_METADATA_ZIP=1
 export H5VL_LOG_SEL_ENCODING=1
@@ -120,8 +119,8 @@ do
                 unset HDF5_PLUGIN_PATH
             fi
             
-            echo "aprun -n ${NP} -N ${PPN} -t ${TL} -e LD_LIBRARY_PATH=${LD_LIBRARY_PATH} -e H5VL_LOG_METADATA_MERGE=${H5VL_LOG_METADATA_MERGE} -e H5VL_LOG_METADATA_ZIP=${H5VL_LOG_METADATA_ZIP} -e H5VL_LOG_SEL_ENCODING=${H5VL_LOG_SEL_ENCODING} ./${APP}"
-            aprun -n ${NP} -N ${PPN}  -t ${TL} -e LD_LIBRARY_PATH=${LD_LIBRARY_PATH} -e H5VL_LOG_METADATA_MERGE=${H5VL_LOG_METADATA_MERGE} -e H5VL_LOG_METADATA_ZIP=${H5VL_LOG_METADATA_ZIP} -e H5VL_LOG_SEL_ENCODING=${H5VL_LOG_SEL_ENCODING} ./${APP}
+            echo "aprun -n ${NP} -N ${PPN} -t ${RTL} -e LD_LIBRARY_PATH=${LD_LIBRARY_PATH} -e H5VL_LOG_METADATA_MERGE=${H5VL_LOG_METADATA_MERGE} -e H5VL_LOG_METADATA_ZIP=${H5VL_LOG_METADATA_ZIP} -e H5VL_LOG_SEL_ENCODING=${H5VL_LOG_SEL_ENCODING} ./${APP}"
+            aprun -n ${NP} -N ${PPN}  -t ${RTL} -e LD_LIBRARY_PATH=${LD_LIBRARY_PATH} -e H5VL_LOG_METADATA_MERGE=${H5VL_LOG_METADATA_MERGE} -e H5VL_LOG_METADATA_ZIP=${H5VL_LOG_METADATA_ZIP} -e H5VL_LOG_SEL_ENCODING=${H5VL_LOG_SEL_ENCODING} ./${APP}
 
             ENDTIME=`date +%s.%N`
             TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
