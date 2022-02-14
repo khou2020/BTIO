@@ -10,6 +10,7 @@
       use mpiio_m
       use pnetcdf_m
       use hdf5_m
+      use adios2_m
       implicit none
 
       character io_mode
@@ -94,8 +95,10 @@
          err = mpiio_setup(io_mode)
       else if (io_method .LT. 4) then ! 2: pnc blocking, 3: pnc onon-blocking
          err = pnetcdf_setup(io_mode, io_method)
-      else
+      else if (io_method .LT. 6) then
          err = hdf5_setup(io_mode, io_method)
+      else
+         err = adios2_setup(io_mode, io_method)
       endif
       if (err .EQ. 0) goto 999
 
@@ -105,16 +108,20 @@
                call mpiio_write(io_method)
             else if (io_method .LT. 4) then
                call pnetcdf_write
-            else 
+            else if (io_method .LT. 6) then
                 call hdf5_write
+            else
+                call adios2_write
             endif
          else
             if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
                call mpiio_read(io_method)
             else if (io_method .LT. 4) then
-                call pnetcdf_read
-            else 
+               call pnetcdf_read
+            else if (io_method .LT. 6) then
                call hdf5_read
+            else
+               call adios2_read
             endif
          endif
       end do
@@ -123,8 +130,10 @@
             call mpiio_cleanup
         else if (io_method .LT. 4) then
             call pnetcdf_cleanup
-        else 
+        else if (io_method .LT. 6) then
             call hdf5_cleanup
+        else
+            call adios2_cleanup
         endif
 
       call deallocate_variables
